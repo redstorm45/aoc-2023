@@ -40,11 +40,11 @@ fn main() {
                 return 2_i32.pow((x-1) as u32);
             }
         }
-        let match_count = zeropow( scratched.iter().filter(|x| card.contains(x)).count().try_into().unwrap() );
-        res1 += match_count;
+        let match_count = scratched.iter().filter(|x| card.contains(x)).count().try_into().unwrap();
+        res1 += zeropow(match_count);
 
         let current_mul : BigUint = card_queue.pop_front().unwrap_or(num_traits::Zero::zero()) +1 as u32;
-        println!("Mul: {current_mul}");
+        println!("Adding {current_mul} cards to next {match_count}");
         res2 += current_mul.clone();
 
         for i in 0..match_count {

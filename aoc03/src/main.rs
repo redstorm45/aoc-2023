@@ -10,6 +10,21 @@ struct NumInfo {
     value: i32
 }
 
+/*
+fn print_symbol_ranges(m : Vec<Vec<bool>>) {
+    for line in m {
+        for b in line {
+            if b {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        println!("");
+    }
+}
+*/
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let filename = &args[1];
@@ -93,19 +108,23 @@ fn main() {
         symbol_map = new_map;
     }
 
+    // Check the map
+    //print_symbol_ranges(symbol_map);
+
     // Eliminate numbers not close to symbols
     let mut part_numbers : Vec<i32> = vec![];
     for numinfo in numbers {
-        let mut valid : bool = true;
+        let mut is_part : bool = false;
         for x in numinfo.xbeg..numinfo.xend {
-            if !symbol_map.get(numinfo.y).expect("Y axis").get(x).expect("X axis") {
-                valid = false;
+            if *symbol_map.get(numinfo.y).expect("Y axis").get(x).expect("X axis") {
+                is_part = true;
             }
         }
-        if valid {
+        if is_part {
             part_numbers.push(numinfo.value);
         }
     }
+
 
     let res: i32 = part_numbers.iter().sum();
     println!("Part number total: {res}");

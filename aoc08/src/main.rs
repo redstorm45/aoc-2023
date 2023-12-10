@@ -2,15 +2,17 @@
 use std::env;
 use std::fs;
 use std::collections::HashMap;
+use num_bigint::BigInt;
+use num_traits::identities::{Zero, One};
 
 
-fn to_node_id(s : &str) -> i32 {
-    let mut res : i32 = 0;
+fn to_node_id(s : &str) -> i64 {
+    let mut res : i64 = 0;
     for c in s.chars() {
         match c {
             'A'..='Z' => {
                 res *= 26;
-                res += (c as i32) - ('A' as i32);
+                res += (c as i64) - ('A' as i64);
             },
             _ => {}
         }
@@ -22,24 +24,78 @@ fn side_to_bools(s : &str) -> Vec<bool> {
     return s.chars().map(|c| c=='R').collect();
 }
 
-fn extended_gcd(a: i32, b:i32) -> (i32, i32, i32) {
+fn extended_gcd(a: &BigInt, b: &BigInt) -> (BigInt, BigInt, BigInt) {
     // find gcd(a,b) and numbers s and t such that sa+tb = gcd(a,b)
     // returns (gcd(a,b), s, t)
-    let mut (oldr, r) = (a,b);
-    let mut (olds, s) = (1,0);
-    let mut (oldt, t) = (0,1);
+    let (mut oldr,mut  r) = (a.clone(),b.clone());
+    let (mut olds,mut  s) = (BigInt::one(),BigInt::zero());
+    let (mut oldt,mut  t) = (BigInt::zero(),BigInt::one());
 
-    while r != 0 {
-        let quotient = old_r % r;
-        (oldr, r) = (r, oldr - quotient*r);
-        (olds, s) = (s, olds - quotient*s);
-        (oldt, t) = (t, oldt - quotient*t);
+
+    while r != BigInt::zero() {
+        let quotient = oldr.clone() / r.clone();
+        (oldr, r) = (r.clone(), oldr - quotient.clone()*r);
+        (olds, s) = (s.clone(), olds - quotient.clone()*s);
+        (oldt, t) = (t.clone(), oldt - quotient*t);
     }
+
+    println!("gcd ({a}, {b}) = {oldr}");
 
     return (oldr, olds, oldt);
 }
 
-fn tuple_indexed(pair : &(i32,i32), idx : bool) -> i32 {
+fn modular_inverse(a: BigInt, n: BigInt) -> Option<BigInt> {
+    // get inverse of a modulo n
+    // i.e. satisfies ax = 1 mod n
+    let (g, x, _) = extended_gcd(&a, &n);
+    if g == BigInt::one() {
+        return Some(x);
+    }
+    return None;
+}
+
+fn positive_mod(a: BigInt,b: BigInt) -> BigInt{
+    let r = a%b.clone();
+    if r < BigInt::zero() {
+        return r+b;
+    }
+    return r;
+}
+
+// ex: (B=5, A=4)<>(B=6, A=6) -> impossible
+//     (B=1, A=3)<>(B=0, A=5) -> (B=10, A=15)
+// offset is C such that C + k*lcm(A,A') = Ai+B = A'j+B'
+// it should be the first value with that property, with i>=0 and j>=0
+// A'i-Aj = B-B'
+// ex : 5i - 3j = 1 - 0    (i=2, j=3)
+fn merge_loops(loop1: (BigInt,BigInt), loop2: (BigInt,BigInt)) -> (BigInt,BigInt) {
+    let (start1, size1) = loop1;
+    let (start2, size2) = loop2;
+
+    println!("Combine loops {start1}+k{size1} and {start2}+k{size2}");
+
+    let (gcd,_,_) = extended_gcd(&size1, &size2);
+    let size = size1.clone()*size2.clone()/gcd.clone();
+
+    let small_size2 = size2.clone()/gcd.clone();
+    let small_size1 = size1.clone()/gcd;
+
+    //let inv1 = modular_inverse(size1, small_size2);
+    let inv2 = modular_inverse(size2.clone(), small_size1).unwrap();
+
+    let idx1 = positive_mod((size1.clone()-size2.clone())*inv2, small_size2);
+    //let idx2 = positive_mod((size2-size1)*inv1, small_size1);
+
+    let start = start1.clone() + idx1.clone()*size1.clone();
+
+    println!("Found size {} and starting value {} = {} + {}*{} = {} + {}*k",
+             size, start,
+             start1, size1, idx1,
+             start2, size2);
+    return (start, size);
+}
+
+fn tuple_indexed(pair : &(i64,i64), idx : bool) -> i64 {
     if idx {
         return pair.1;
     } else {
@@ -47,7 +103,7 @@ fn tuple_indexed(pair : &(i32,i32), idx : bool) -> i32 {
     }
 }
 
-fn get_loop_description(map: &HashMap<i32,(i32,i32)>, dir: &Vec<bool>, start: i32) -> (i32, Vec<i32>, Vec<i32>) {
+fn get_loop_description(map: &HashMap<i64,(i64,i64)>, dir: &Vec<bool>, start: i64) -> (i64, Vec<i64>, Vec<i64>) {
     /*
     Since map and dir are finite, the path will end up in a loop,
     of maximum size |map|*|dir| = 702*271 = 190242 and minimum size |dir| = 271
@@ -57,10 +113,10 @@ fn get_loop_description(map: &HashMap<i32,(i32,i32)>, dir: &Vec<bool>, start: i3
 
     This function returns S, followed by all C_i, followed by all indexes of Z nodes before the loop
     */
-    let mut visited: HashMap<(i32,i32),i32> = HashMap::new(); // map (node_id, dir_idx) -> path_idx
+    let mut visited: HashMap<(i64,i64),i64> = HashMap::new(); // map (node_id, dir_idx) -> path_idx
     let mut path_length = 0; // for readability, but is = to visited.len()
     let mut current = (start,0);
-    let mut z_indexes: Vec<i32> = vec![];
+    let mut z_indexes: Vec<i64> = vec![];
 
     while !visited.contains_key(&current) {
         visited.insert(current, path_length);
@@ -72,7 +128,7 @@ fn get_loop_description(map: &HashMap<i32,(i32,i32)>, dir: &Vec<bool>, start: i3
         path_length +=1;
         let dir_idx = (path_length as usize)%dir.len();
 
-        current = (tuple_indexed(map.get(&current.0).unwrap(), *dir.get(dir_idx).unwrap()), dir_idx as i32);
+        current = (tuple_indexed(map.get(&current.0).unwrap(), *dir.get(dir_idx).unwrap()), dir_idx as i64);
     }
 
     let loop_path_length = *visited.get(&current).unwrap(); // size of path before the loop
@@ -95,7 +151,7 @@ fn main() {
     let sides = side_to_bools( contents_it.next().unwrap() );
     contents_it.next();
 
-    let mut directions: HashMap<i32,(i32,i32)> = HashMap::new();
+    let mut directions: HashMap<i64,(i64,i64)> = HashMap::new();
     for line in contents_it {
         if line.len() < 2 {
             continue;
@@ -125,7 +181,7 @@ fn main() {
     // bruteforce does not work, too long
 
     let mut res2 = 0;
-    let mut current_nodes: Vec<i32> = directions.keys().filter(|k| (*k)%26 == 0).map(|&x| x).collect();
+    let mut current_nodes: Vec<i64> = directions.keys().filter(|k| (*k)%26 == 0).map(|&x| x).collect();
 
     println!("Using {} paths at the same time", current_nodes.len());
 
@@ -144,29 +200,26 @@ fn main() {
 
     println!("Reached end (2) in {} steps", res2);
     */
-    let mut start_nodes: Vec<i32> = directions.keys().filter(|k| (*k)%26 == 0).map(|&x| x).collect();
-    let mut curloop: Option<(i32,i32)> = None; // (C,S) to have C + k*S
+    let mut start_nodes: Vec<i64> = directions.keys().filter(|k| (*k)%26 == 0).map(|&x| x).collect();
+    start_nodes.sort();
+    let mut curloop: Option<(BigInt,BigInt)> = None; // (C,S) to have C + k*S
 
     for start in start_nodes {
         let desc = get_loop_description(&directions, &sides, start);
 
         // simplification: only one Z node in the loop, none outside (valid on input data)
-        let newloop = (desc.1.get(0).unwrap(), desc.0);
+        let newloop = (*desc.1.get(0).unwrap(), desc.0);
+        let big_newloop = (BigInt::from(newloop.0), BigInt::from(newloop.1));
 
         if curloop.is_none() {
-            curloop = newloop;
+            curloop = Some(big_newloop);
         } else {
-            newsize = num::integer::lcm(curloop.0, newloop.0);
-            // ex: (B=5, A=4)<>(B=6, A=6) -> impossible
-            //     (B=1, A=3)<>(B=0, A=5) -> (B=10, A=15)
-            // offset is C such that C + k*lcm(A,A') = Ai+B = A'j+B'
-            // it should be the first value with that property, with i>=0 and j>=0
-            // A'i-Aj = B-B'
-            // ex : 5i - 3j = 1 - 0    (i=2, j=3)
-            
+            curloop = Some( merge_loops(curloop.unwrap(), big_newloop) );
         }
 
         println!("Found description starting at {}", start);
         dbg!(desc);
     }
+
+    println!("Global loop starts at {}", curloop.unwrap().0)
 }

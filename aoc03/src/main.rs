@@ -84,6 +84,8 @@ fn main() {
 
     let contents = fs::read_to_string(filename)
         .expect("Should have been able to read the file");
+    
+    //let contents = "467..114..\n...*......\n..35..633.\n......#...\n617*......\n.....+.58.\n..592.....\n......755.\n...$.*....\n.664.598..";
 
     // Parse input
     let mut symbol_map: Vec<Vec<bool>> = vec![];
@@ -175,17 +177,24 @@ fn main() {
             let gear_id = *gear_map.get(numinfo.y).expect("Y axis").get(x).expect("X axis");
             if gear_id != 0 {
                 let numset = gear_numbers.entry(gear_id).or_insert(HashSet::new());
-                numset.insert(numi as i32);
+                numset.insert(numinfo.value as i32);
             }
         }
     }
 
+    //dbg!(&gear_numbers);
+
     // Iterate valid gears
-    for _,gear_numset in gear_numbers {
-        
+    let mut gearsum = 0;
+    for (_,gear_numset) in gear_numbers {
+        if gear_numset.len() == 2 {
+            let mut it = gear_numset.iter();
+            gearsum += it.next().unwrap() * it.next().unwrap();
+        }
     }
 
 
     let res: i32 = part_numbers.iter().sum();
     println!("Part number total: {res}");
+    println!("Gear sum total: {gearsum}");
 }

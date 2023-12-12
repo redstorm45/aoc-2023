@@ -62,12 +62,6 @@ fn positive_mod(a: BigInt,b: BigInt) -> BigInt{
     return r;
 }
 
-// ex: (B=5, A=4)<>(B=6, A=6) -> impossible
-//     (B=1, A=3)<>(B=0, A=5) -> (B=10, A=15)
-// offset is C such that C + k*lcm(A,A') = Ai+B = A'j+B'
-// it should be the first value with that property, with i>=0 and j>=0
-// A'i-Aj = B-B'
-// ex : 5i - 3j = 1 - 0    (i=2, j=3)
 fn merge_loops(loop1: (BigInt,BigInt), loop2: (BigInt,BigInt)) -> (BigInt,BigInt) {
     let (start1, size1) = loop1;
     let (start2, size2) = loop2;
@@ -87,18 +81,6 @@ fn merge_loops(loop1: (BigInt,BigInt), loop2: (BigInt,BigInt)) -> (BigInt,BigInt
     // define X = inverse of B' mod A"
     // (A-B)*X mod A" = kb
 
-    /*
-    let small_size2 = size2.clone()/gcd.clone();
-    let small_size1 = size1.clone()/gcd;
-
-    let inv1 = modular_inverse(size1, small_size2);
-    let inv2 = modular_inverse(size2.clone(), small_size1).unwrap();
-
-    let idx1 = positive_mod((size1.clone()-size2.clone())*inv2, small_size2);
-    let idx2 = positive_mod((size2-size1)*inv1, small_size1);
-
-    let start = start2.clone() + idx1.clone()*size2.clone();
-    */
     let small_size1 = size1.clone() / gcd;
     let inv = modular_inverse(size2.clone(), small_size1.clone()).unwrap();
     let idx = positive_mod( (start1.clone()-start2.clone())*inv, small_size1 );
@@ -171,7 +153,6 @@ fn main() {
 
     let contents = fs::read_to_string(filename).expect("Could not read file");
     //let contents = "LR\n\nAAA = (BBB, XXX)\nBBB = (XXX, ZZZ)\nZZZ = (BBB, XXX)\nCCA = (CCB, XXX)\nCCB = (CCC, CCC)\nCCC = (CCZ, CCZ)\nCCZ = (CCB, CCB)\nXXX = (XXX, XXX)";
-    //let contents = "LR\n\nAAA = (BBB, XXX)\nBBB = (XXX, ZZZ)\nZZZ = (BBB, XXX)\nCCA = (CCB, XXX)\nCCB = (CCC, CCC)\nCCC = (CCZ, CCZ)\nCCZ = (CCB, CCB)\nXXX = (XXX, XXX)";
 
     let mut contents_it = contents.split('\n');
 
@@ -207,29 +188,6 @@ fn main() {
     }
     println!("Reached end in {} steps", res);
 
-    /*
-    // bruteforce does not work, too long
-
-    let mut res2 = 0;
-    let mut current_nodes: Vec<i64> = directions.keys().filter(|k| (*k)%26 == 0).map(|&x| x).collect();
-
-    println!("Using {} paths at the same time", current_nodes.len());
-
-    while current_nodes.iter().any(|x| x%26 != 25) {
-        let side_to_right = *sides.get( res2 % sides.len() ).unwrap();
-
-        for node in current_nodes.iter_mut() {
-            *node = tuple_indexed(directions.get(node).unwrap(), side_to_right);
-        }
-        res2 += 1;
-
-        if res2%10000 == 0 {
-            println!("... Step {}", res2);
-        }
-    }
-
-    println!("Reached end (2) in {} steps", res2);
-    */
     let mut start_nodes: Vec<i64> = directions.keys().filter(|k| (*k)%100 == 0).map(|&x| x).collect();
     start_nodes.sort();
     let mut curloop: Option<(BigInt,BigInt)> = None; // (C,S) to have C + k*S

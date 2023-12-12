@@ -17,27 +17,24 @@ fn transpose(v: Vec<Vec<bool>>) -> Vec<Vec<bool>> {
         .collect()
 }
 
-fn grow_once(map: Vec<Vec<bool>>) -> Vec<Vec<bool>> {
-    let mut res: Vec<Vec<bool>> = vec![];
-    for row in map {
-        if row.iter().filter(|x| **x).count() == 0 {
-            res.push(row.clone());
-        }
-        res.push(row);
-    }
-    return res;
+fn empty_row_indexes(v: &Vec<Vec<bool>>) -> Vec<usize> {
+    v.iter().enumerate().filter(|(_,r)| r.iter().filter(|&k| *k).count()==0).map(|(i,_)| i).collect()
 }
 
-fn grow_universe(map: Vec<Vec<bool>>) -> Vec<Vec<bool>> {
-    grow_once( transpose(grow_once(transpose(map))) )
+fn expand_positions(v: &Vec<(usize,usize)>, xgrow: &Vec<usize>, ygrow: &Vec<usize>, amount:usize) -> Vec<(usize,usize)> {
+    // replace cells at indicated indexes by cells of size 'amount'
+    v.iter().map(|(x,y)| (
+        x + xgrow.iter().filter(|&v| v<x).count()*(amount-1),
+        y + ygrow.iter().filter(|&v| v<y).count()*(amount-1),
+    )).collect()
 }
 
-fn get_positions(map: Vec<Vec<bool>>) -> Vec<(i32,i32)> {
-    let mut res: Vec<(i32,i32)> = vec![];
+fn get_positions(map: &Vec<Vec<bool>>) -> Vec<(usize,usize)> {
+    let mut res: Vec<(usize,usize)> = vec![];
     for (i,row) in map.iter().enumerate() {
         for (j,v) in row.iter().enumerate() {
             if *v {
-                res.push( (i as i32,j as i32) );
+                res.push( (i,j) );
             }
         }
     }
@@ -59,14 +56,31 @@ fn main() {
     let map: Vec<Vec<bool>> = contents.split('\n').filter(|s| s.len()>0)
                                       .map(|s| s.chars().map(|c| c=='#').collect())
                                       .collect();
+    /*
+    let map: Vec<Vec<bool>> = "...#......\n.......#..\n#.........\n..........\n......#...\n.#........\n.........#\n..........\n.......#..\n#...#....."
+                    .split('\n').filter(|s| s.len()>0)
+                                      .map(|s| s.chars().map(|c| c=='#').collect())
+                                      .collect();
+    */
 
-    let expanded = grow_universe(map);
-    let galaxies = get_positions(expanded);
+    let galaxies = get_positions(&map);
+    //dbg!(&galaxies);
+    let xempty = empty_row_indexes(&map);
+    let yempty = empty_row_indexes(&transpose(map));
 
-    let mut res = 0;
-    for ((ax,ay), (bx,by)) in iter_pairs(galaxies) {
-        res += (ax-bx).abs() + (ay-by).abs();
+    //dbg!(&xempty);
+    //dbg!(&yempty);
+
+    for grow in [2,1000000] {
+        let positions = expand_positions(&galaxies, &xempty, &yempty, grow);
+
+        //dbg!(&positions);
+
+        let mut res = 0;
+        for ((ax,ay), (bx,by)) in iter_pairs(positions.iter().map(|(x,y)| (*x as isize, *y as isize)).collect()) {
+            res += (ax-bx).abs() + (ay-by).abs();
+        }
+
+        println!("total dist {res}");
     }
-
-    println!("total dist {res}");
 }

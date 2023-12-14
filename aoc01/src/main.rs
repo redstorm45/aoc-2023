@@ -24,11 +24,15 @@ fn main() {
     ];
 
     let mut res : u32 = 0;
+    let mut res2 : u32 = 0;
     let mut lastletters = "".to_owned();
 
     for line in contents.split('\n') {
         let mut first : Option<char> = None;
         let mut last : Option<char> = None;
+
+        let mut first_digit : Option<char> = None;
+        let mut last_digit : Option<char> = None;
 
         for cr in line.chars() {
             match cr {
@@ -36,7 +40,11 @@ fn main() {
                     if first.is_none() {
                         first = Some(cr);
                     }
+                    if first_digit.is_none() {
+                        first_digit = Some(cr);
+                    }
                     last = Some(cr);
+                    last_digit = Some(cr);
                 },
                 'a'..='z' => {
                     lastletters.push(cr);
@@ -69,13 +77,20 @@ fn main() {
             }
         }
 
-        match (first,last) {
+        match (first_digit,last_digit) {
             (Some(x),Some(y)) => {
                 res += x.to_digit(10).unwrap()*10 + y.to_digit(10).unwrap();
+            },
+            (_,_) => {}
+        }
+        match (first,last) {
+            (Some(x),Some(y)) => {
+                res2 += x.to_digit(10).unwrap()*10 + y.to_digit(10).unwrap();
             },
             (_,_) => {}
         }
     }
 
     println!("Result: {res}");
+    println!("Result 2: {res2}");
 }

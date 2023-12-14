@@ -88,7 +88,7 @@ fn main() {
     lines_iter.next();
     while has_next_map {
 
-        let map_info = lines_iter.next(); // drop the "<>-to-<> map:" line
+        let _map_info = lines_iter.next(); // drop the "<>-to-<> map:" line
 
         // read the map
         loop {

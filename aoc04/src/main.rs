@@ -3,7 +3,6 @@ use std::env;
 use std::fs;
 use std::collections::VecDeque;
 use num_bigint::BigUint;
-use num_bigint::ToBigUint;
 
 
 fn parse_integers(text: &str) -> Vec<i32> {
@@ -44,7 +43,7 @@ fn main() {
         res1 += zeropow(match_count);
 
         let current_mul : BigUint = card_queue.pop_front().unwrap_or(num_traits::Zero::zero()) +1 as u32;
-        println!("Adding {current_mul} cards to next {match_count}");
+        //println!("Adding {current_mul} cards to next {match_count}");
         res2 += current_mul.clone();
 
         for i in 0..match_count {

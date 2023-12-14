@@ -172,7 +172,7 @@ fn main() {
 
     // Get numbers around gear symbols
     let mut gear_numbers: HashMap<i32, HashSet<i32>> = HashMap::new();
-    for (numi,numinfo) in numbers.iter().enumerate() {
+    for (_,numinfo) in numbers.iter().enumerate() {
         for x in numinfo.xbeg..numinfo.xend {
             let gear_id = *gear_map.get(numinfo.y).expect("Y axis").get(x).expect("X axis");
             if gear_id != 0 {

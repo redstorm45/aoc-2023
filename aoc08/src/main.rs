@@ -66,12 +66,12 @@ fn merge_loops(loop1: (BigInt,BigInt), loop2: (BigInt,BigInt)) -> (BigInt,BigInt
     let (start1, size1) = loop1;
     let (start2, size2) = loop2;
 
-    println!("Combine loops {start1}+k{size1} and {start2}+k{size2}");
+    //println!("Combine loops {start1}+k{size1} and {start2}+k{size2}");
 
     let (gcd,_,_) = extended_gcd(&size1, &size2);
     let size = size1.clone()*size2.clone()/gcd.clone();
 
-    println!("Found loop size {size}");
+    //println!("Found loop size {size}");
 
     // S = A + ka*A' = B+kb*B'
     // A-B + ka*A' = kb*B'
@@ -86,10 +86,12 @@ fn merge_loops(loop1: (BigInt,BigInt), loop2: (BigInt,BigInt)) -> (BigInt,BigInt
     let idx = positive_mod( (start1.clone()-start2.clone())*inv, small_size1 );
     let start = start2.clone() + idx.clone()*size2.clone();
 
+    /*
     println!("Found size {} and starting value {} = {} + {}*{} = {} + {}*k",
              size, start,
              start2, size2, idx,
              start1, size1);
+    */
     return (start, size);
 }
 
@@ -186,18 +188,20 @@ fn main() {
         current_node = tuple_indexed(directions.get(&current_node).unwrap(), side_to_right);
         res += 1;
     }
-    println!("Reached end in {} steps", res);
+    println!("Reached first end in {} steps", res);
 
     let mut start_nodes: Vec<i64> = directions.keys().filter(|k| (*k)%100 == 0).map(|&x| x).collect();
     start_nodes.sort();
     let mut curloop: Option<(BigInt,BigInt)> = None; // (C,S) to have C + k*S
 
     for start in start_nodes {
-        println!("Start at {start}");
+        //println!("Start at {start}");
         let desc = get_loop_description(&directions, &sides, start);
 
+        /*
         println!("Found description starting at {}", start);
         dbg!(&desc);
+        */
 
         // simplification: only one Z node in the loop, none outside (valid on input data)
         let newloop = (*desc.1.get(0).unwrap(), desc.0);

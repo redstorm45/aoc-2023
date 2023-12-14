@@ -110,7 +110,7 @@ fn platform_weight(rolling: &Vec<Vec<bool>>) -> usize {
         ).sum()
 }
 
-fn printblock(block: &Vec<Vec<bool>>, roll: &Vec<Vec<bool>>) {
+fn _printblock(block: &Vec<Vec<bool>>, roll: &Vec<Vec<bool>>) {
     for (lineb, liner) in block.iter().zip(roll.iter()) {
         for (b,r) in lineb.iter().zip(liner.iter()) {
             if *b {
@@ -151,11 +151,11 @@ fn main() {
         current = roll_platform_round(&blocks, &current);
         step += 1;
     }
-    let mut loopstep = known.get(&current).unwrap();
+    let loopstep = known.get(&current).unwrap();
     // loop happens from 'loop' to 'loopstep'
     // go to cycle before the end
     let remaining_steps = (1000000000-loopstep)%(step-loopstep);
-    for i in 0..remaining_steps {
+    for _ in 0..remaining_steps {
         current = roll_platform_round(&blocks, &current);
     }
 

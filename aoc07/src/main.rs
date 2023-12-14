@@ -19,7 +19,7 @@ enum HandType {
 struct Hand<'a> {
     htype : HandType,
     score : i32,
-    source : &'a str,
+    _source : &'a str,
 }
 
 impl Ord for Hand<'_> {
@@ -98,7 +98,7 @@ fn build_hand(hand_str : &str, use_jokers : bool) -> Hand {
         return Hand {
             htype: HandType::FiveKind,
             score: score,
-            source: hand_str
+            _source: hand_str
         }
     }
 
@@ -108,14 +108,14 @@ fn build_hand(hand_str : &str, use_jokers : bool) -> Hand {
         return Hand {
             htype: HandType::FiveKind,
             score: score,
-            source: hand_str
+            _source: hand_str
         }
     }
     if first_count+joker_count == 4 {
         return Hand {
             htype: HandType::FourKind,
             score: score,
-            source: hand_str
+            _source: hand_str
         }
     }
 
@@ -124,35 +124,35 @@ fn build_hand(hand_str : &str, use_jokers : bool) -> Hand {
         return Hand {
             htype: HandType::FullHouse,
             score: score,
-            source: hand_str
+            _source: hand_str
         }
     }
     if first_count+joker_count == 3 && sec_count == 1{
         return Hand {
             htype: HandType::ThreeKind,
             score: score,
-            source: hand_str
+            _source: hand_str
         }
     }
     if first_count == 2 && sec_count+joker_count == 2{
         return Hand {
             htype: HandType::TwoPair,
             score: score,
-            source: hand_str
+            _source: hand_str
         }
     }
     if first_count+joker_count == 2 && sec_count == 1{
         return Hand {
             htype: HandType::OnePair,
             score: score,
-            source: hand_str
+            _source: hand_str
         }
     }
 
     return Hand {
         htype: HandType::HighCard,
         score: score,
-        source: hand_str
+        _source: hand_str
     }
 }
 
@@ -188,8 +188,8 @@ fn main() {
         res1 += (i as i32 +1) * bid;
     }
     let mut res2 = 0;
-    for (i, (hand,bid)) in all_bids2.iter().enumerate() {
-        println!("Ranked {} is hand {} with bid {}", i+1, hand.source, bid);
+    for (i, (_hand,bid)) in all_bids2.iter().enumerate() {
+        //println!("Ranked {} is hand {} with bid {}", i+1, hand.source, bid);
         res2 += (i as i32 +1) * bid;
     }
 

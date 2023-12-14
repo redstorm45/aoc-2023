@@ -92,13 +92,6 @@ fn get_pipe(dir1: &Direction, dir2: &Direction) -> PipeType {
     }
 }
 
-fn has_right_connector(pipe: &PipeType) -> bool {
-    return match pipe {
-        PipeType::Horizontal | PipeType::BendUR | PipeType::BendDR => true,
-        _ => false,
-    }
-}
-
 fn main() {
     let mut args = env::args();
     args.next();
@@ -156,14 +149,14 @@ fn main() {
             };
 
             if nx < 0 || nx >= (map.len() as isize) || ny < 0 || ny >= (map.get(0).unwrap().len() as isize) {
-                println!("Search head ended on border {} {} {} {}", nx, ny, map.len(), map.get(0).unwrap().len());
+                //println!("Search head ended on border {} {} {} {}", nx, ny, map.len(), map.get(0).unwrap().len());
                 break;
             }
 
             if (nx,ny) == (*hx as isize,*hy as isize) {
                 let start_pipe = get_pipe(hd, &reverse_direction(&cd));
                 *map.get_mut(*hx).unwrap().get_mut(*hy).unwrap() = start_pipe;
-                println!("Overwritting start pipe {}", start_pipe as i32);
+                //println!("Overwritting start pipe {}", start_pipe as i32);
                 found = true;
                 break;
             }
@@ -172,7 +165,7 @@ fn main() {
             let nd = convert_pipe(&cd, p);
 
             if nd.is_none() {
-                println!("Search head ended on nothing");
+                //println!("Search head ended on nothing");
                 break;
             }
 
@@ -193,6 +186,7 @@ fn main() {
         *walls.get_mut(*i).unwrap().get_mut(*j).unwrap() = true;
     }
 
+    /*
     for (i,wall) in walls.iter().enumerate() {
         let mut in_top = false; // is the top right corner in area
         let mut in_bot = false; // is the bottom right corner in area
@@ -239,6 +233,7 @@ fn main() {
         }
         println!("");
     }
+    */
 
     let mut area = 0;
     for (i,line) in walls.iter().enumerate() {

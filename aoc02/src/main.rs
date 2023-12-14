@@ -26,7 +26,7 @@ fn main() {
             continue;
         }
 
-        println!("Lines: {line}");
+        //println!("Lines: {line}");
 
         let gameid = line.split(':').next().expect("First part of string").split(' ').last().expect("Game id").parse::<u32>().unwrap();
         let hands = line.split(':').last().expect("Second part of string");

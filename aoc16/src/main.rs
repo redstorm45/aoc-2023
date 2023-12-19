@@ -94,7 +94,7 @@ fn next_coords(x: usize, y:usize, exit_dir:Direction, width:usize, height:usize)
 fn count_energized_from(map:&Vec<Vec<Reflector>>, input_dir:Direction, position: usize) -> usize {
     let width = map.get(0).unwrap().len();
 
-    let mut initial: (usize,usize,Direction);
+    let initial: (usize,usize,Direction);
     if input_dir == Direction::Right {
         initial = (position, 0, Direction::Right);
     } else if input_dir == Direction::Right {

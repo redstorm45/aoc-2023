@@ -90,6 +90,29 @@ fn next_coords(x: usize, y:usize, exit_dir:Direction, width:usize, height:usize)
     }
 }
 
+fn _printscores(block: &Vec<Vec<i32>>) {
+    for lineb in block.iter() {
+        for b in lineb.iter() {
+            let c = (('0' as u8) as i32 + *b) as u8 as char;
+            print!("{}", c);
+        }
+        println!("");
+    }
+}
+
+fn _printblock(block: &Vec<Vec<bool>>) {
+    for lineb in block.iter() {
+        for b in lineb.iter() {
+            if *b {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        println!("");
+    }
+}
+
 fn main() {
     /*
     let mut args = env::args();
@@ -103,6 +126,7 @@ fn main() {
 
     let map: Vec<Vec<i32>> = contents.split('\n').filter(|s| s.len()>0).map(|r| r.chars().map(|c| c as i32 - '0' as i32).collect()).collect();
 
+    _printscores(&map);
 
     fn get_map_at(map:&Vec<Vec<i32>>, x:usize, y:usize) -> i32 {
         if x!=0 && y!= 0 {
@@ -134,7 +158,7 @@ fn main() {
     let mut solution: Option<SearchState> = None;
     while heads.len() > 0 {
         // pop lowest distance first (explore breadth-first)
-        heads.sort_by(|a,b| a.total_score.cmp(&b.total_score));
+        heads.sort_by(|a,b| a.total_score.cmp(&b.total_score).reverse());
         let current = heads.pop().unwrap();
 
         // early-exit
@@ -145,7 +169,7 @@ fn main() {
         }
 
         // map all possibilitie from 'current'
-        for exit_dir in exit_possibilities(current.state.entry_dir, current.state.transition_count>=MAX_TRANSITIONS) {
+        for exit_dir in exit_possibilities(current.state.entry_dir, current.state.transition_count+1>=MAX_TRANSITIONS) {
             let next_maybe = next_coords(current.state.x, current.state.y, exit_dir, width, height);
             if next_maybe.is_some() {
                 // we can get to 'next' from 'current'.
@@ -163,7 +187,6 @@ fn main() {
                     transition_count: new_transition_count,
                 };
 
-
                 if explored.inserted(new_state, Some(current.state)) {
                     heads.push(SearchHead{
                         state: new_state,
@@ -176,6 +199,8 @@ fn main() {
 
     assert!(solution.is_some(), "Solution was not found");
 
+    let mut solution_map: Vec<Vec<bool>> = map.iter().map(|r| r.iter().map(|_| false).collect()).collect();
+
     //dbg!(&explored);
 
     let mut path: Vec<(usize,usize)> = vec![(height-1, width-1)];
@@ -183,6 +208,7 @@ fn main() {
     while prev_opt.is_some() {
         let prev = prev_opt.unwrap();
         path.push( (prev.x, prev.y) );
+        *solution_map.get_mut(prev.y).unwrap().get_mut(prev.x).unwrap() = true;
         let prev_prev = explored.get( &prev ).unwrap();
         if prev_prev.is_some() {
             let pp = prev_prev.unwrap();
@@ -190,6 +216,8 @@ fn main() {
         }
         prev_opt = *prev_prev;
     }
+
+    _printblock(&solution_map);
 
     dbg!(path);
 }

@@ -3,9 +3,11 @@ use std::env;
 use std::fs;
 use std::hash::Hash;
 use std::collections::HashMap;
+use std::collections::BinaryHeap;
+use std::cmp::Ordering;
 
 
-#[derive(Copy,Clone,Eq,PartialEq,Hash,Debug)]
+#[derive(Copy,Clone,Eq,PartialEq,Hash,Debug,PartialOrd,Ord)]
 enum Direction {
     Right=0,
     Left=1,
@@ -20,6 +22,23 @@ struct SearchState {
     entry_dir: Direction,
     transition_count: usize,
 }
+
+impl Ord for SearchState {
+    // An implementation just to make ordering consistent
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.x.cmp(&other.x)
+            .then_with(|| self.y.cmp(&other.y))
+            .then_with(|| self.entry_dir.cmp(&other.entry_dir))
+            .then_with(|| self.transition_count.cmp(&other.transition_count))
+    }
+}
+
+impl PartialOrd for SearchState {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 
 pub trait Inserted<K: Eq + Hash, V> {
     fn inserted(&mut self, item: K, value: V) -> bool;
@@ -37,25 +56,41 @@ impl<K: Eq + Hash, V> Inserted<K, V> for HashMap<K, V> {
     }
 }
 
+#[derive(PartialEq,Eq)]
 struct SearchHead {
     state: SearchState,
     total_score: usize,
 }
 
-fn exit_possibilities(entry_dir:Direction, needs_turn:bool) -> Vec<Direction> {
-    if !needs_turn {
-        match entry_dir {
-            Direction::Right => vec![Direction::Right, Direction::Bottom, Direction::Top],
-            Direction::Left => vec![Direction::Left, Direction::Bottom, Direction::Top],
-            Direction::Bottom => vec![Direction::Left, Direction::Right, Direction::Bottom],
-            Direction::Top => vec![Direction::Left, Direction::Right, Direction::Top],
-        }
-    } else {
+impl Ord for SearchHead {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.total_score.cmp(&self.total_score)
+            .then_with(|| self.state.cmp(&other.state))
+    }
+}
+
+impl PartialOrd for SearchHead {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn exit_possibilities(entry_dir:Direction, needs_turn:bool, allow_turn:bool) -> Vec<Direction> {
+    if needs_turn {
         match entry_dir {
             Direction::Right => vec![Direction::Bottom, Direction::Top],
             Direction::Left => vec![Direction::Bottom, Direction::Top],
             Direction::Bottom => vec![Direction::Left, Direction::Right],
             Direction::Top => vec![Direction::Left, Direction::Right],
+        }
+    } else if !allow_turn {
+        vec![entry_dir]
+    } else {
+        match entry_dir {
+            Direction::Right => vec![Direction::Right, Direction::Bottom, Direction::Top],
+            Direction::Left => vec![Direction::Left, Direction::Bottom, Direction::Top],
+            Direction::Bottom => vec![Direction::Bottom, Direction::Left, Direction::Right],
+            Direction::Top => vec![Direction::Top, Direction::Left, Direction::Right],
         }
     }
 }
@@ -113,31 +148,16 @@ fn _printblock(block: &Vec<Vec<bool>>) {
     }
 }
 
-fn main() {
-    /*
-    let mut args = env::args();
-    args.next();
-    let filename = args.next().expect("No filename");
+struct CrucibleParams {
+    max_steps: usize,
+    min_steps: usize,
+}
 
-    let contents = fs::read_to_string(filename).expect("Could not read file");
-    */
+fn get_map_at(map:&Vec<Vec<i32>>, x:usize, y:usize) -> i32 {
+    *map.get(y).unwrap().get(x).unwrap()
+}
 
-    let contents = "2413432311323\n3215453535623\n3255245654254\n3446585845452\n4546657867536\n1438598798454\n4457876987766\n3637877979653\n4654967986887\n4564679986453\n1224686865563\n2546548887735\n4322674655533";
-
-    let map: Vec<Vec<i32>> = contents.split('\n').filter(|s| s.len()>0).map(|r| r.chars().map(|c| c as i32 - '0' as i32).collect()).collect();
-
-    _printscores(&map);
-
-    fn get_map_at(map:&Vec<Vec<i32>>, x:usize, y:usize) -> i32 {
-        if x!=0 && y!= 0 {
-            *map.get(y).unwrap().get(x).unwrap()
-        } else {
-            0
-        }
-    }
-
-    const MAX_TRANSITIONS: usize = 3;
-
+fn crucible_step_count(map:&Vec<Vec<i32>>, params:CrucibleParams) -> usize {
     let mut explored: HashMap<SearchState, Option<SearchState>> = HashMap::new();
     for dir in [Direction::Left,Direction::Right,Direction::Top,Direction::Bottom] {
         explored.insert(SearchState{
@@ -149,27 +169,33 @@ fn main() {
     }
 
     // heads: cell and entry direction
+    /*
     let mut heads: Vec<SearchHead> = vec![
         SearchHead{state:SearchState{x:0, y:0, entry_dir:Direction::Right, transition_count:0}, total_score:0},
         SearchHead{state:SearchState{x:0, y:0, entry_dir:Direction::Bottom, transition_count:0}, total_score:0}
     ];
+    */
+    let mut heads = BinaryHeap::new();
+    heads.push(SearchHead{state:SearchState{x:0, y:0, entry_dir:Direction::Right, transition_count:0}, total_score:0});
+    heads.push(SearchHead{state:SearchState{x:0, y:0, entry_dir:Direction::Bottom, transition_count:0}, total_score:0});
+
     let (height,width) = (map.len(), map.get(0).unwrap().len());
 
-    let mut solution: Option<SearchState> = None;
+    let mut solution: Option<SearchHead> = None;
     while heads.len() > 0 {
         // pop lowest distance first (explore breadth-first)
-        heads.sort_by(|a,b| a.total_score.cmp(&b.total_score).reverse());
+        //heads.sort_by(|a,b| a.total_score.cmp(&b.total_score).reverse());
         let current = heads.pop().unwrap();
 
         // early-exit
         if current.state.x+1 == height && current.state.y+1 == width {
-            println!("Solution found at score {}", current.total_score);
-            solution = Some(current.state);
+            //println!("Solution found at score {}", current.total_score);
+            solution = Some(current);
             break;
         }
 
         // map all possibilitie from 'current'
-        for exit_dir in exit_possibilities(current.state.entry_dir, current.state.transition_count+1>=MAX_TRANSITIONS) {
+        for exit_dir in exit_possibilities(current.state.entry_dir, current.state.transition_count+1 >= params.max_steps, current.state.transition_count+1 >= params.min_steps) {
             let next_maybe = next_coords(current.state.x, current.state.y, exit_dir, width, height);
             if next_maybe.is_some() {
                 // we can get to 'next' from 'current'.
@@ -190,7 +216,7 @@ fn main() {
                 if explored.inserted(new_state, Some(current.state)) {
                     heads.push(SearchHead{
                         state: new_state,
-                        total_score:new_score,
+                        total_score: new_score,
                     });
                 }
             }
@@ -199,6 +225,7 @@ fn main() {
 
     assert!(solution.is_some(), "Solution was not found");
 
+    /*
     let mut solution_map: Vec<Vec<bool>> = map.iter().map(|r| r.iter().map(|_| false).collect()).collect();
 
     //dbg!(&explored);
@@ -218,6 +245,30 @@ fn main() {
     }
 
     _printblock(&solution_map);
+    */
 
-    dbg!(path);
+    return solution.unwrap().total_score;
+}
+
+fn main() {
+    let mut args = env::args();
+    args.next();
+    let filename = args.next().expect("No filename");
+
+    let contents = fs::read_to_string(filename).expect("Could not read file");
+
+
+    //let contents = "2413432311323\n3215453535623\n3255245654254\n3446585845452\n4546657867536\n1438598798454\n4457876987766\n3637877979653\n4654967986887\n4564679986453\n1224686865563\n2546548887735\n4322674655533";
+
+    let map: Vec<Vec<i32>> = contents.split('\n').filter(|s| s.len()>0).map(|r| r.chars().map(|c| c as i32 - '0' as i32).collect()).collect();
+
+    //_printscores(&map);
+
+    let steps_1 = crucible_step_count(&map, CrucibleParams{max_steps: 3, min_steps:0});
+    println!("Steps with normal crucible: {}", steps_1);
+
+    let steps_2 = crucible_step_count(&map, CrucibleParams{max_steps: 10, min_steps:4});
+    println!("Steps with ultra crucible: {}", steps_2);
+
+    //dbg!(path);
 }
